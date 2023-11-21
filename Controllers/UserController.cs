@@ -21,7 +21,7 @@ public class UserController : Controller
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(200, Type = typeof(User))]
+    [ProducesResponseType(200, Type = typeof(UserDto))]
     [ProducesResponseType(404)]
     public IActionResult GetUser(int id)
     {
@@ -38,7 +38,7 @@ public class UserController : Controller
     }
 
     [HttpGet()]
-    [ProducesResponseType(200, Type = typeof(IEnumerable<User>))]
+    [ProducesResponseType(200, Type = typeof(IEnumerable<UserDto>))]
     public IActionResult GetUsers()
     {
         var users = _mapper.Map<List<UserDto>>(_userRepository.GetUsers());
@@ -46,50 +46,6 @@ public class UserController : Controller
             return BadRequest(ModelState);
 
         return Ok(users);
-    }
-
-    [HttpPost]
-    [ProducesResponseType(204)]
-    [ProducesResponseType(400)]
-    public IActionResult CreateUser([FromBody] UserDto userCreate)
-    {
-        if (userCreate == null)
-            return BadRequest(ModelState);
-
-        var user = _userRepository.GetUsers()
-            .Where(u =>
-                u.Username.Trim().ToLower() == userCreate.Username.Trim().ToLower() ||
-                u.Email.Equals(userCreate.Email)
-            )
-            .FirstOrDefault();
-
-        if (user != null)
-        {
-            ModelState.AddModelError("errors", "User already exists");
-            return StatusCode(422, ModelState);
-        }
-
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var userMap = _mapper.Map<User>(userCreate);
-        var context = new ValidationContext(userMap);
-        var results = new List<ValidationResult>();
-        if (!Validator.TryValidateObject(userMap, context, results, true))
-        {
-            foreach (var error in results)
-                if (error.ErrorMessage != null)
-                    ModelState.AddModelError("errors", error.ErrorMessage);
-            return BadRequest(ModelState);
-        }
-
-        if (!_userRepository.CreateUser(userMap))
-        {
-            ModelState.AddModelError("errors", "Something went wrong while saving");
-            return StatusCode(500, ModelState);
-        }
-
-        return Ok("Successfuly");
     }
 
     [HttpPut("{userId}")]

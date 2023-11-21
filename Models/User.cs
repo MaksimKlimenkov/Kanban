@@ -13,4 +13,6 @@ public class User
     public string FirstName { get; set; } = null!;
     [MaxLength(20)]
     public string LastName { get; set; } = null!;
+    [MaxLength(80)]
+    public string PasswordHash { get; set; } = null!;
 }
