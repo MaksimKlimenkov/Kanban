@@ -25,15 +25,49 @@ public class AuthController : Controller
     [ProducesResponseType(400)]
     public IActionResult Register([FromBody] RegisterDto request)
     {
+        //Check request
         if (request == null)
             return BadRequest(ModelState);
 
+        //Check Password and Password Confirm fields
         if (request.Password != request.PasswordConfirm)
         {
-            ModelState.AddModelError("Password", "Password and Confirm fields don't match");
+            ModelState.AddModelError("Password", "Password and Password Confirm fields don't match");
             return BadRequest(ModelState);
         }
 
+        //Validate Password
+        var passwordValidationContext = new ValidationContext(request)
+        {
+            MemberName = nameof(request.Password)
+        };
+        var passwordValidationResults = new List<ValidationResult>();
+        if (!Validator.TryValidateProperty(
+            request.Password,
+            passwordValidationContext,
+            passwordValidationResults)
+        )
+        {
+            foreach (var error in passwordValidationResults)
+                if (error.ErrorMessage != null)
+                    ModelState.AddModelError("Password", error.ErrorMessage);
+            return BadRequest(ModelState);
+        }
+
+        //Validate Model
+        var userMap = _mapper.Map<User>(request);
+        userMap.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        var context = new ValidationContext(userMap);
+        var results = new List<ValidationResult>();
+        if (!Validator.TryValidateObject(userMap, context, results, true))
+        {
+            foreach (var error in results)
+                if (error.ErrorMessage != null)
+                    ModelState.AddModelError("errors", error.ErrorMessage);
+            return BadRequest(ModelState);
+        }
+
+        // Check exists
         var user = _userRepository.GetUsers()
             .Where(u =>
                 u.Username.Trim().ToLower() == request.Username.Trim().ToLower() ||
@@ -50,21 +84,7 @@ public class AuthController : Controller
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var userMap = _mapper.Map<User>(request);
-
-        string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-        userMap.PasswordHash = passwordHash;
-
-        var context = new ValidationContext(userMap);
-        var results = new List<ValidationResult>();
-        if (!Validator.TryValidateObject(userMap, context, results, true))
-        {
-            foreach (var error in results)
-                if (error.ErrorMessage != null)
-                    ModelState.AddModelError("errors", error.ErrorMessage);
-            return BadRequest(ModelState);
-        }
-
+        //Create User
         if (!_userRepository.CreateUser(userMap))
         {
             ModelState.AddModelError("errors", "Something went wrong while saving");
