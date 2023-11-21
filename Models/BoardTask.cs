@@ -10,6 +10,7 @@ public class BoardTask
     public string Title { get; set; } = null!;
     public string? Description { get; set; }
     public DateTime? DeadLine { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
     public BoardColumn? BoardColumn { get; set; }
     public List<TaskExecutor> Executors { get; set; } = new();
 }

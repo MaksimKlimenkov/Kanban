@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using AutoMapper;
 using Kanban.Dto;
 using Kanban.Interfaces;
@@ -58,13 +59,13 @@ public class UserController : Controller
         var user = _userRepository.GetUsers()
             .Where(u =>
                 u.Username.Trim().ToLower() == userCreate.Username.Trim().ToLower() ||
-                u.Email.Trim().ToLower() == userCreate.Email.Trim().ToLower()
+                u.Email.Equals(userCreate.Email)
             )
             .FirstOrDefault();
 
         if (user != null)
         {
-            ModelState.AddModelError("", "User already exists");
+            ModelState.AddModelError("errors", "User already exists");
             return StatusCode(422, ModelState);
         }
 
@@ -72,9 +73,19 @@ public class UserController : Controller
             return BadRequest(ModelState);
 
         var userMap = _mapper.Map<User>(userCreate);
+        var context = new ValidationContext(userMap);
+        var results = new List<ValidationResult>();
+        if (!Validator.TryValidateObject(userMap, context, results, true))
+        {
+            foreach (var error in results)
+                if (error.ErrorMessage != null)
+                    ModelState.AddModelError("errors", error.ErrorMessage);
+            return BadRequest(ModelState);
+        }
+
         if (!_userRepository.CreateUser(userMap))
         {
-            ModelState.AddModelError("", "Something went wrong while saving");
+            ModelState.AddModelError("errors", "Something went wrong while saving");
             return StatusCode(500, ModelState);
         }
 
@@ -100,10 +111,19 @@ public class UserController : Controller
             return BadRequest();
 
         var userMap = _mapper.Map<User>(updatedUser);
+        var context = new ValidationContext(userMap);
+        var results = new List<ValidationResult>();
+        if (!Validator.TryValidateObject(userMap, context, results, true))
+        {
+            foreach (var error in results)
+                if (error.ErrorMessage != null)
+                    ModelState.AddModelError("errors", error.ErrorMessage);
+            return BadRequest(ModelState);
+        }
 
         if (!_userRepository.UpdateUser(userMap))
         {
-            ModelState.AddModelError("", "Something went wrong updating user");
+            ModelState.AddModelError("errors", "Something went wrong updating user");
             return StatusCode(500, ModelState);
         }
 
