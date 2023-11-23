@@ -5,7 +5,7 @@ namespace Kanban.Interfaces;
 public interface IUserRepository
 {
     User? GetUser(int id);
-    ICollection<User> GetUsers();
+    IQueryable<User> GetUsers();
     bool UserExists(int id);
     bool CreateUser(User user);
     bool UpdateUser(User user);

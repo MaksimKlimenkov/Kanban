@@ -18,9 +18,7 @@ public class UserRepository : IUserRepository
 
     public User? GetUser(int id) => _context.Users.Where(u => u.Id == id).FirstOrDefault();
 
-    public ICollection<User> GetUsers() => _context.Users.ToList();
-
-
+    public IQueryable<User> GetUsers() => _context.Users;
 
     public bool UpdateUser(User user)
     {
