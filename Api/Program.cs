@@ -1,5 +1,4 @@
 using Kanban.Data;
-using Kanban.IndentityServer;
 using Kanban.Interfaces;
 using Kanban.Repository;
 using Microsoft.EntityFrameworkCore;
@@ -14,11 +13,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("KanbanDatabase")));
-builder.ConfigureIndentityServices();
+
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {
-        options.Authority = "https://localhost:7104";
+        options.Authority = "https://localhost:5001";
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -36,8 +35,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-app.UseIdentityServer();
 
 app.UseAuthentication();
 app.UseAuthorization();
