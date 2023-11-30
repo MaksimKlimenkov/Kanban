@@ -20,6 +20,7 @@ public class ApplicationContext : IdentityDbContext<User, IdentityRole, string>
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        //TODO: Add unique indexes
         modelBuilder.Entity<TaskExecutor>().HasKey(e => new { e.TaskId, e.UserId });
         base.OnModelCreating(modelBuilder);
     }
