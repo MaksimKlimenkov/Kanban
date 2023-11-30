@@ -3,6 +3,8 @@ using AutoMapper;
 using Kanban.Dto;
 using Kanban.Interfaces;
 using Kanban.Models;
+using Kanban.Roles;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Kanban.Controllers;
@@ -23,6 +25,7 @@ public class UserController : Controller
     [HttpGet("{id}")]
     [ProducesResponseType(200, Type = typeof(UserDto))]
     [ProducesResponseType(404)]
+    [Authorize(Roles = StaticUserRoles.USER)]
     public IActionResult GetUser(string id)
     {
         var user = _mapper.Map<UserDto>(
@@ -39,9 +42,10 @@ public class UserController : Controller
 
     [HttpGet()]
     [ProducesResponseType(200, Type = typeof(IEnumerable<UserDto>))]
+    [Authorize(Roles = StaticUserRoles.ADMIN_OWNER)]
     public IActionResult GetUsers()
     {
-        var users = _mapper.Map<List<UserDto>>(_userRepository.GetUsers());
+        var users = _mapper.Map<List<UserDto>>(_userRepository.GetUsers().ToList());
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
@@ -52,6 +56,7 @@ public class UserController : Controller
     [ProducesResponseType(204)]
     [ProducesResponseType(400)]
     [ProducesResponseType(404)]
+    [Authorize(Roles = StaticUserRoles.USER)]
     public IActionResult UpdateUser(string userId, [FromBody] UserDto updatedUser)
     {
         if (updatedUser == null)

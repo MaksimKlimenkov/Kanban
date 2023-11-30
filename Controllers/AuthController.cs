@@ -1,12 +1,10 @@
-using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using AutoMapper;
 using Kanban.Dto;
-using Kanban.Interfaces;
 using Kanban.Models;
 using Kanban.Roles;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -29,6 +27,7 @@ public class AuthController : Controller
     }
 
     [HttpPost("seed-roles")]
+    [Authorize(Roles = StaticUserRoles.ADMIN_OWNER)]
     public async Task<IActionResult> SeedRoles()
     {
         bool isOwnerRoleExists = await _roleManager.RoleExistsAsync(StaticUserRoles.OWNER);
@@ -95,14 +94,14 @@ public class AuthController : Controller
 
         if (user == null)
         {
-            ModelState.AddModelError("errors", "Invalid Credentails");
+            ModelState.AddModelError("errors", "Invalid Credentials");
             return Unauthorized(ModelState);
         }
 
         bool isPasswordCorrect = await _userManager.CheckPasswordAsync(user, loginDto.Password);
         if (!isPasswordCorrect)
         {
-            ModelState.AddModelError("errors", "Invalid Credentails");
+            ModelState.AddModelError("errors", "Invalid Credentials");
             return Unauthorized(ModelState);
         }
 
@@ -114,14 +113,43 @@ public class AuthController : Controller
             new Claim(ClaimTypes.Name, user.UserName!),
             new Claim("JWTID", Guid.NewGuid().ToString()),
         };
-
-        foreach (var role in userRoles)
-            authClaims.Add(new Claim(ClaimTypes.Role, role));
+        authClaims.AddRange(userRoles.Select(role => new Claim(ClaimTypes.Role, role)));
 
         var token = GenerateNewJwt(authClaims);
 
 
         return Ok(token);
+    }
+
+    [HttpPatch("set-role")]
+    [Authorize(Roles = StaticUserRoles.ADMIN_OWNER)]
+    public async Task<IActionResult> SetRole([FromBody] SetRoleDto setRoleDto)
+    {
+        var roleExists = await _roleManager.RoleExistsAsync(setRoleDto.Role);
+        if (!roleExists)
+        {
+            ModelState.AddModelError("Role", "Role does not exists");
+            return BadRequest(ModelState);
+        }
+        
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var currentUser = await _userManager.FindByIdAsync(userId!);
+        var currentUserRoles = await _userManager.GetRolesAsync(currentUser!);
+        if (
+            !currentUserRoles.Contains(StaticUserRoles.OWNER) &&
+            setRoleDto.Role == StaticUserRoles.OWNER
+        )
+            return Forbid();
+
+        var user = await _userManager.FindByIdAsync(setRoleDto.Id.ToString());
+        if (user == null)
+        {
+            ModelState.AddModelError("User", "User does not exists");
+            return NotFound(ModelState);
+        }
+
+        await _userManager.AddToRoleAsync(user, setRoleDto.Role);
+        return Ok("Role Added");
     }
 
     private string GenerateNewJwt(List<Claim> authClaims)
@@ -137,7 +165,3 @@ public class AuthController : Controller
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
-
-// ValidIssuer = builder.Configuration["JwtSettings:ValidIssuer"],
-// ValidAudience = builder.Configuration["JwtSettings:ValidAudience"],
-// IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]!))
