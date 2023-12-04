@@ -1,10 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using AutoMapper;
 using Kanban.Dto;
 using Kanban.Interfaces;
 using Kanban.Models;
 using Kanban.Roles;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Kanban.Controllers;
@@ -13,80 +15,86 @@ namespace Kanban.Controllers;
 [ApiController]
 public class UserController : Controller
 {
-    private readonly IUserRepository _userRepository;
+    private readonly UserManager<User> _userManager;
     private readonly IMapper _mapper;
 
-    public UserController(IUserRepository userRepository, IMapper mapper)
+    public UserController(UserManager<User> userManager, IMapper mapper)
     {
-        _userRepository = userRepository;
+        _userManager = userManager;
         _mapper = mapper;
     }
 
-    [HttpGet("{id}")]
+    [HttpGet()]
     [ProducesResponseType(200, Type = typeof(UserDto))]
     [ProducesResponseType(404)]
     [Authorize(Roles = StaticUserRoles.USER)]
-    public IActionResult GetUser(string id)
+    public async Task<IActionResult> GetUser()
     {
-        var user = _mapper.Map<UserDto>(
-            _userRepository.GetUser(id)
-        );
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var user = await _userManager.FindByIdAsync(userId!);
+        
         if (user == null)
             return NotFound();
 
-        return Ok(user);
+        var userMap = _mapper.Map<UserDto>(user);
+        return Ok(userMap);
     }
 
-    [HttpGet()]
+    [HttpGet("all")]
     [ProducesResponseType(200, Type = typeof(IEnumerable<UserDto>))]
     [Authorize(Roles = StaticUserRoles.ADMIN_OWNER)]
     public IActionResult GetUsers()
     {
-        var users = _mapper.Map<List<UserDto>>(_userRepository.GetUsers().ToList());
+        var users = _mapper.Map<List<UserDto>>(_userManager.Users.ToList());
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
         return Ok(users);
     }
 
-    [HttpPut("{userId}")]
+    [HttpPut()]
     [ProducesResponseType(204)]
     [ProducesResponseType(400)]
     [ProducesResponseType(404)]
     [Authorize(Roles = StaticUserRoles.USER)]
-    public IActionResult UpdateUser(string userId, [FromBody] UserDto updatedUser)
+    public async Task<IActionResult> UpdateUser([FromBody]  UserDto updatedUser)
     {
-        if (updatedUser == null)
+        if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        if (userId != updatedUser.Id)
-            return BadRequest(ModelState);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var user = await _userManager.FindByIdAsync(userId!);
 
-        if (!_userRepository.UserExists(userId))
+        if (user == null)
             return NotFound();
 
-        if (!ModelState.IsValid)
-            return BadRequest();
+        if (user.Id != updatedUser.Id)
+            return Forbid();
 
-        var userMap = _mapper.Map<User>(updatedUser);
-        var context = new ValidationContext(userMap);
-        var results = new List<ValidationResult>();
-        if (!Validator.TryValidateObject(userMap, context, results, true))
+        user.Email = updatedUser.Email;
+        user.UserName = updatedUser.UserName;
+        user.FirstName = updatedUser.FirstName;
+        user.LastName = updatedUser.LastName;
+        
+        var userValidator = new UserValidator<User>();
+        var validateResult = await userValidator.ValidateAsync(_userManager, user);
+
+        if (!validateResult.Succeeded)
         {
-            foreach (var error in results)
-                ModelState.AddModelError("errors", error.ErrorMessage!);
+            foreach (var error in validateResult.Errors)
+                ModelState.AddModelError("User", error.Description);
             return BadRequest(ModelState);
         }
 
-        if (!_userRepository.UpdateUser(userMap))
-        {
-            ModelState.AddModelError("errors", "Something went wrong updating user");
-            return StatusCode(500, ModelState);
-        }
+        var updateResult = await _userManager.UpdateAsync(user);
 
-        return NoContent();
+        if (updateResult.Succeeded) return NoContent();
+        
+        foreach (var error in updateResult.Errors)
+            ModelState.AddModelError("errors", error.Description);
+        return StatusCode(500, ModelState);
     }
 }
