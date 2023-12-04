@@ -11,6 +11,8 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Kanban.Controllers;
 
+//TODO: Add email confirm
+//TODO: Add password reset
 [Route("api/[controller]")]
 [ApiController]
 public class AuthController : Controller
