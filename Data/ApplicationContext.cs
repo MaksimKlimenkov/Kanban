@@ -22,6 +22,7 @@ public class ApplicationContext : IdentityDbContext<User, IdentityRole, string>
     {
         //TODO: Add unique indexes
         modelBuilder.Entity<TaskExecutor>().HasKey(e => new { e.TaskId, e.TeamMemberId });
+        modelBuilder.Entity<TeamMember>().HasKey(e => new { e.UserId, e.TeamId });
         base.OnModelCreating(modelBuilder);
     }
 }

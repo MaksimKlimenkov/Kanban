@@ -91,8 +91,8 @@ public class AuthController : Controller
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var user = await _userManager.FindByNameAsync(loginDto.Query);
-        user ??= await _userManager.FindByEmailAsync(loginDto.Query);
+        var user = await _userManager.FindByNameAsync(loginDto.Query) ??
+                   await _userManager.FindByEmailAsync(loginDto.Query);
 
         if (user == null)
         {

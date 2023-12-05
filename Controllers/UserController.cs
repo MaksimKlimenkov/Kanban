@@ -1,8 +1,6 @@
-using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using AutoMapper;
 using Kanban.Dto;
-using Kanban.Interfaces;
 using Kanban.Models;
 using Kanban.Roles;
 using Microsoft.AspNetCore.Authorization;

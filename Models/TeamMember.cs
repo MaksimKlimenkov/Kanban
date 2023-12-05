@@ -16,8 +16,7 @@ public enum AccessLevels
 
 public class TeamMember
 {
-    public int Id { get; set; }
-    public int UserId { get; set; }
+    public string UserId { get; set; } = null!;
     public int TeamId { get; set; }
     public Statuses Status { get; set; }
     public AccessLevels AccessLevel { get; set; }

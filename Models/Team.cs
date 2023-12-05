@@ -7,6 +7,6 @@ public class Team
     public int Id { get; set; }
     [MaxLength(30)]
     public string Title { get; set; } = null!;
-    public int OwnerId { get; set; }
+    public string OwnerId { get; set; } = null!;
     public User? Owner { get; set; }
 }

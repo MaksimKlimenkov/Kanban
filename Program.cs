@@ -1,6 +1,8 @@
 using System.Text;
 using Kanban.Data;
+using Kanban.Interfaces;
 using Kanban.Models;
+using Kanban.Repository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +13,8 @@ var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddScoped<IRepository<TeamMember>, TeamMemberRepository>();
+builder.Services.AddScoped<IRepository<Team>, TeamRepository>();
 builder.Services.AddSwaggerGen(opt =>
 {
     opt.SwaggerDoc("v1", new OpenApiInfo { Title = "MyAPI", Version = "v1" });
@@ -41,7 +45,7 @@ builder.Services.AddSwaggerGen(opt =>
 
 // Add Database
 builder.Services.AddDbContext<ApplicationContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("KanbanDatabase")));
+    options.UseNpgsql(config.GetConnectionString("KanbanDatabase")));
 
 // Add Services
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -83,9 +87,9 @@ builder.Services
         {
             ValidateIssuer = true,
             ValidateAudience = true,
-            ValidIssuer = builder.Configuration["JwtSettings:ValidIssuer"],
-            ValidAudience = builder.Configuration["JwtSettings:ValidAudience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]!))
+            ValidIssuer = config["JwtSettings:ValidIssuer"],
+            ValidAudience = config["JwtSettings:ValidAudience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["JwtSettings:SecretKey"]!))
         };
     });
 
