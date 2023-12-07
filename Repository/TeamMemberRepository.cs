@@ -7,7 +7,5 @@ public class TeamMemberRepository : RepositoryBase<TeamMember>
 {
     public TeamMemberRepository(ApplicationContext context) : base(context)
     {
-        Table = Context.TeamMembers;
-        Query = Table.AsQueryable();
     }
 }

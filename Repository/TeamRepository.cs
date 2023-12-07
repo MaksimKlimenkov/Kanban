@@ -11,12 +11,11 @@ public class TeamRepository : RepositoryBase<Team>
     public TeamRepository(ApplicationContext context, IRepository<TeamMember> teamMemberRepository) : base(context)
     {
         _teamMemberRepository = teamMemberRepository;
-        Table = Context.Teams;
-        Query = Table.AsQueryable();
     }
 
     public override async Task<Team> CreateAsync(Team team)
     {
+        // TODO: Refactor to autocreate teammember
         var newTeam = await Table.AddAsync(team);
         var teamEntity = newTeam.Entity;
         var teamMember = new TeamMember()

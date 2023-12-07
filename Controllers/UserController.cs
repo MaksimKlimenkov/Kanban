@@ -58,7 +58,7 @@ public class UserController : Controller
     [ProducesResponseType(400)]
     [ProducesResponseType(404)]
     [Authorize(Roles = StaticUserRoles.USER)]
-    public async Task<IActionResult> UpdateUser([FromBody]  UserDto updatedUser)
+    public async Task<IActionResult> UpdateUser([FromBody] UserDto updatedUser)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);

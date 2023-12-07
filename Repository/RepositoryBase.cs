@@ -6,10 +6,21 @@ namespace Kanban.Repository;
 
 public abstract class RepositoryBase<T> : IRepository<T> where T : class
 {
-    protected readonly ApplicationContext Context;
-    public IQueryable<T> Query = null!;
-    protected DbSet<T> Table = null!;
-    protected RepositoryBase(ApplicationContext context) => Context = context;
+    private readonly ApplicationContext _context;
+    public IQueryable<T> Query { get; set; }
+    protected DbSet<T> Table { get; set; }
+
+    protected RepositoryBase(ApplicationContext context)
+    {
+        var props = context.GetType().GetProperties();
+        var prop = props.FirstOrDefault(p => p.PropertyType == typeof(DbSet<T>));
+        if (prop == null)
+            throw new Exception($"DbSet<{typeof(T).Name}> not found in context");
+        var table = (DbSet<T>)prop.GetValue(context)!;
+        Table = table;
+        Query = Table.AsQueryable();
+        _context = context;
+    }
     
     public virtual async Task<T> CreateAsync(T entity)
     {
@@ -26,6 +37,6 @@ public abstract class RepositoryBase<T> : IRepository<T> where T : class
 
     public virtual async Task SaveAsync()
     {
-        await Context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
     }
 }
