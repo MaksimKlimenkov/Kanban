@@ -7,8 +7,8 @@ namespace Kanban.Repository;
 public abstract class RepositoryBase<T> : IRepository<T> where T : class
 {
     private readonly ApplicationContext _context;
-    public IQueryable<T> Query { get; set; }
-    protected DbSet<T> Table { get; set; }
+    public IQueryable<T> Query { get; }
+    protected DbSet<T> Table { get; }
 
     protected RepositoryBase(ApplicationContext context)
     {
@@ -17,11 +17,17 @@ public abstract class RepositoryBase<T> : IRepository<T> where T : class
         if (prop == null)
             throw new Exception($"DbSet<{typeof(T).Name}> not found in context");
         var table = (DbSet<T>)prop.GetValue(context)!;
+        _context = context;
         Table = table;
         Query = Table.AsQueryable();
-        _context = context;
     }
-    
+
+    public async Task<T?> FindByIdAsync(int id)
+    {
+        var entity = await Table.FindAsync(id);
+        return entity;
+    }
+
     public virtual async Task<T> CreateAsync(T entity)
     {
         var newEntity = await Table.AddAsync(entity);
