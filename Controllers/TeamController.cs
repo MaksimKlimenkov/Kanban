@@ -28,7 +28,7 @@ public class TeamController : ControllerBase
     }
     
     [HttpGet("get-teams")]
-    [ProducesResponseType(200, Type = typeof(List<Team>))]
+    [ProducesResponseType(200, Type = typeof(IEnumerable<TeamDto>))]
     [Authorize(Roles = StaticUserRoles.USER)]
     public async Task<IActionResult> GetTeams()
     {
@@ -42,7 +42,8 @@ public class TeamController : ControllerBase
             select t;
         
         var teams = await teamsQuery.ToListAsync();
-        return Ok(teams);
+        var teamsMap = _mapper.Map<List<TeamDto>>(teams);
+        return Ok(teamsMap);
 
     }
 
@@ -58,8 +59,8 @@ public class TeamController : ControllerBase
         var teamMap = _mapper.Map<Team>(createTeamDto);
         teamMap.OwnerId = userId!;
         var team = await _teamRepository.CreateAsync(teamMap);
+        
         var teamDto = _mapper.Map<TeamDto>(team);
-
         return Ok(teamDto);
     }
 
