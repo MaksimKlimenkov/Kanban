@@ -21,7 +21,8 @@ public class AuthController : Controller
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IConfiguration _configuration;
 
-    public AuthController(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
+    public AuthController(UserManager<User> userManager, RoleManager<IdentityRole> roleManager,
+        IConfiguration configuration)
     {
         _userManager = userManager;
         _roleManager = roleManager;
@@ -32,15 +33,15 @@ public class AuthController : Controller
     [Authorize(Roles = StaticUserRoles.ADMIN_OWNER)]
     public async Task<IActionResult> SeedRoles()
     {
-        bool isOwnerRoleExists = await _roleManager.RoleExistsAsync(StaticUserRoles.OWNER);
-        bool isAdminRoleExists = await _roleManager.RoleExistsAsync(StaticUserRoles.ADMIN);
-        bool isUserRoleExists = await _roleManager.RoleExistsAsync(StaticUserRoles.USER);
+        var isOwnerRoleExists = await _roleManager.RoleExistsAsync(StaticUserRoles.OWNER);
+        var isAdminRoleExists = await _roleManager.RoleExistsAsync(StaticUserRoles.ADMIN);
+        var isUserRoleExists = await _roleManager.RoleExistsAsync(StaticUserRoles.USER);
 
-        if (!isOwnerRoleExists && !isAdminRoleExists && !isUserRoleExists) return Ok("Seeded");
+        if (isOwnerRoleExists && isAdminRoleExists && isUserRoleExists) return Ok("Seeded");
 
-        await _roleManager.CreateAsync(new(StaticUserRoles.OWNER));
-        await _roleManager.CreateAsync(new(StaticUserRoles.ADMIN));
-        await _roleManager.CreateAsync(new(StaticUserRoles.USER));
+        await _roleManager.CreateAsync(new IdentityRole(StaticUserRoles.OWNER));
+        await _roleManager.CreateAsync(new IdentityRole(StaticUserRoles.ADMIN));
+        await _roleManager.CreateAsync(new IdentityRole(StaticUserRoles.USER));
 
         return Ok("Seeded");
     }
@@ -133,7 +134,7 @@ public class AuthController : Controller
             ModelState.AddModelError("Role", "Role does not exists");
             return BadRequest(ModelState);
         }
-        
+
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var currentUser = await _userManager.FindByIdAsync(userId!);
         var currentUserRoles = await _userManager.GetRolesAsync(currentUser!);

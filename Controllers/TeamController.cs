@@ -19,14 +19,17 @@ public class TeamController : ControllerBase
     private readonly IRepository<Team> _teamRepository;
     private readonly IRepository<TeamMember> _teamMemberRepository;
     private readonly IMapper _mapper;
-    
-    public TeamController(IRepository<Team> teamRepository, IRepository<TeamMember> teamMemberRepository, IMapper mapper)
+
+    public TeamController(
+        IRepository<Team> teamRepository,
+        IRepository<TeamMember> teamMemberRepository,
+        IMapper mapper)
     {
         _teamRepository = teamRepository;
         _teamMemberRepository = teamMemberRepository;
         _mapper = mapper;
     }
-    
+
     [HttpGet("get-teams")]
     [ProducesResponseType(200, Type = typeof(IEnumerable<TeamDto>))]
     [Authorize(Roles = StaticUserRoles.USER)]
@@ -36,15 +39,16 @@ public class TeamController : ControllerBase
             return BadRequest(ModelState);
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        //TODO: Rewrite query to exclude TeamMemberRepository
         var teamsQuery = from t in _teamRepository.Query
             join m in _teamMemberRepository.Query on t.Id equals m.TeamId
             where m.UserId == userId
             select t;
-        
+
         var teams = await teamsQuery.ToListAsync();
         var teamsMap = _mapper.Map<List<TeamDto>>(teams);
         return Ok(teamsMap);
-
     }
 
     [HttpPost]
@@ -59,7 +63,7 @@ public class TeamController : ControllerBase
         var teamMap = _mapper.Map<Team>(createTeamDto);
         teamMap.OwnerId = userId!;
         var team = await _teamRepository.CreateAsync(teamMap);
-        
+
         var teamDto = _mapper.Map<TeamDto>(team);
         return Ok(teamDto);
     }
@@ -90,7 +94,6 @@ public class TeamController : ControllerBase
 
         await _teamRepository.SaveAsync();
         return NoContent();
-
     }
 
     [HttpDelete("{id:int}")]
@@ -109,7 +112,7 @@ public class TeamController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (team.OwnerId != userId)
             return Forbid();
-        
+
         await _teamRepository.DeleteAsync(team);
         return NoContent();
     }

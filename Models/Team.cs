@@ -9,4 +9,5 @@ public class Team
     public string Title { get; set; } = null!;
     public string OwnerId { get; set; } = null!;
     public User? Owner { get; set; }
+    public List<TeamMember> Members { get; set; } = new();
 }
