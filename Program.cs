@@ -1,13 +1,16 @@
 using System.Text;
+using Asp.Versioning;
 using Kanban.Data;
 using Kanban.Interfaces;
 using Kanban.Models;
+using Kanban.Options;
 using Kanban.Repository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -15,33 +18,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddScoped<IRepository<TeamMember>, TeamMemberRepository>();
 builder.Services.AddScoped<IRepository<Team>, TeamRepository>();
-builder.Services.AddSwaggerGen(opt =>
-{
-    opt.SwaggerDoc("v1", new OpenApiInfo { Title = "MyAPI", Version = "v1" });
-    opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        In = ParameterLocation.Header,
-        Description = "Please enter token",
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        BearerFormat = "JWT",
-        Scheme = "bearer"
-    });
-    opt.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type=ReferenceType.SecurityScheme,
-                    Id="Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
-});
+builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
+builder.Services.AddSwaggerGen();
 
 // Add Database
 builder.Services.AddDbContext<ApplicationContext>(options =>
@@ -93,6 +71,18 @@ builder.Services
         };
     });
 
+builder.Services.AddApiVersioning(options =>
+    {
+        options.DefaultApiVersion = ApiVersion.Default;
+        options.ReportApiVersions = true;
+    })
+    .AddMvc()
+    .AddApiExplorer(options =>
+    {
+        options.GroupNameFormat = "'v'V";
+        options.SubstituteApiVersionInUrl = true;
+    });
+
 // Pipeline
 var app = builder.Build();
 
@@ -100,7 +90,12 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        var versions = app.DescribeApiVersions();
+        foreach (var version in versions)
+            options.SwaggerEndpoint($"/swagger/{version.GroupName}/swagger.json", version.GroupName);
+    });
 }
 
 app.UseHttpsRedirection();

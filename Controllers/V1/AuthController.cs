@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Asp.Versioning;
 using Kanban.Dto;
 using Kanban.Models;
 using Kanban.Roles;
@@ -9,12 +10,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Kanban.Controllers;
+namespace Kanban.Controllers.V1;
 
 //TODO: Add email confirm
 //TODO: Add password reset
-[Route("api/[controller]")]
 [ApiController]
+[Route("api/v{version:apiVersion}/[controller]")]
+[ApiVersion(1)]
 public class AuthController : Controller
 {
     private readonly UserManager<User> _userManager;

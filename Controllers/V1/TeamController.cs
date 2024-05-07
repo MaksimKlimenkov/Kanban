@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using Asp.Versioning;
 using AutoMapper;
 using Kanban.Dto;
 using Kanban.Interfaces;
@@ -9,24 +10,20 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Kanban.Controllers;
+namespace Kanban.Controllers.V1;
 
-[Route("api/[controller]")]
 [ApiController]
 [Authorize(Roles = StaticUserRoles.USER)]
+[Route("api/v{version:apiVersion}/[controller]")]
+[ApiVersion(1)]
 public class TeamController : ControllerBase
 {
     private readonly IRepository<Team> _teamRepository;
-    private readonly IRepository<TeamMember> _teamMemberRepository;
     private readonly IMapper _mapper;
 
-    public TeamController(
-        IRepository<Team> teamRepository,
-        IRepository<TeamMember> teamMemberRepository,
-        IMapper mapper)
+    public TeamController(IRepository<Team> teamRepository, IMapper mapper)
     {
         _teamRepository = teamRepository;
-        _teamMemberRepository = teamMemberRepository;
         _mapper = mapper;
     }
 
@@ -40,13 +37,11 @@ public class TeamController : ControllerBase
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        //TODO: Rewrite query to exclude TeamMemberRepository
-        var teamsQuery = from t in _teamRepository.Query
-            join m in _teamMemberRepository.Query on t.Id equals m.TeamId
-            where m.UserId == userId
-            select t;
+        var teams = await _teamRepository.Query
+            .Where(t => t.Members.Select(m => m.UserId)
+                .Contains(userId))
+            .ToListAsync();
 
-        var teams = await teamsQuery.ToListAsync();
         var teamsMap = _mapper.Map<List<TeamDto>>(teams);
         return Ok(teamsMap);
     }

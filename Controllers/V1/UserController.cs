@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Asp.Versioning;
 using AutoMapper;
 using Kanban.Dto;
 using Kanban.Models;
@@ -7,10 +8,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Kanban.Controllers;
+namespace Kanban.Controllers.V1;
 
-[Route("api/[controller]")]
 [ApiController]
+[Route("api/v{version:apiVersion}/[controller]")]
+[ApiVersion(1)]
 public class UserController : Controller
 {
     private readonly UserManager<User> _userManager;
@@ -33,7 +35,7 @@ public class UserController : Controller
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var user = await _userManager.FindByIdAsync(userId!);
-        
+
         if (user == null)
             return NotFound();
 
@@ -76,7 +78,7 @@ public class UserController : Controller
         user.UserName = updatedUser.UserName;
         user.FirstName = updatedUser.FirstName;
         user.LastName = updatedUser.LastName;
-        
+
         var userValidator = new UserValidator<User>();
         var validateResult = await userValidator.ValidateAsync(_userManager, user);
 
@@ -90,7 +92,7 @@ public class UserController : Controller
         var updateResult = await _userManager.UpdateAsync(user);
 
         if (updateResult.Succeeded) return NoContent();
-        
+
         foreach (var error in updateResult.Errors)
             ModelState.AddModelError("errors", error.Description);
         return StatusCode(500, ModelState);
