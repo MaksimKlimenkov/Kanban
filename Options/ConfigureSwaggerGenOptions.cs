@@ -5,11 +5,11 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Kanban.Options;
 
-public class ConfigureSwaggerOptions : IConfigureOptions<SwaggerGenOptions>
+public class ConfigureSwaggerGenOptions : IConfigureOptions<SwaggerGenOptions>
 {
     private readonly IApiVersionDescriptionProvider _provider;
 
-    public ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider) => _provider = provider;
+    public ConfigureSwaggerGenOptions(IApiVersionDescriptionProvider provider) => _provider = provider;
 
     public void Configure(SwaggerGenOptions options)
     {

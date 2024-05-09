@@ -1,7 +1,7 @@
 using Kanban.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Kanban.Repository.Extensions;
+namespace Kanban.Extensions.Models;
 
 public static class TeamMemberExtensions
 {
